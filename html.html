@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem za vlažnost tla</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Sistem za vlažnost tla</h1>
+    </header>
+    <main>
+      <section class="status-card">
+        <div class="status-display">
+          <p>Vlažnost tla:</p>
+          <p><span id="moisture-level" class="status-value">0</span>%</p>
+        </div>
+      </section>
+      <section class="controls">
+      
+        <div class="slide-button-container">
+          <div class="slide-button">
+            <input type="checkbox" id="modeSwitch" />
+            <label for="modeSwitch" class="slider"></label>
+          </div>
+          <p id="mode-status">Režim rada: Manuelni</p>
+        </div>
+      
+        
+        <div class="slide-button-container">
+          <div class="slide-button">
+            <input type="checkbox" id="pumpSwitch" />
+            <label for="pumpSwitch" class="slider"></label>
+          </div>
+          <p id="pump-status">Status pupme: Isključena</p>
+        </div>
+      </section>
+      
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    // Firebase konfiguracija
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWOEseA4Kwn-whFoJfjYtFS0xx5_W7VOc",
+      authDomain: "sistem-vlaznosti-tla.firebaseapp.com",
+      databaseURL: "https://sistem-vlaznosti-tla-default-rtdb.firebaseio.com",
+      projectId: "sistem-vlaznosti-tla",
+      storageBucket: "sistem-vlaznosti-tla.appspot.com",
+      messagingSenderId: "875789338933",
+      appId: "1:875789338933:web:c99b0b680d76b8abfa247c"
+    };
+
+    // Inicijalizacija Firebase aplikacije
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Elementi za prikaz i kontrole
+    const moistureLevelElement = document.getElementById('moisture-level');
+    const modeSwitch = document.getElementById('modeSwitch');
+    const pumpSwitch = document.getElementById('pumpSwitch');
+    const modeStatus = document.getElementById('mode-status');
+    const pumpStatus = document.getElementById('pump-status');
+
+    // Praćenje vlažnosti tla iz baze
+    onValue(ref(database, 'moistureLevel'), (snapshot) => {
+      const moistureLevel = snapshot.val();
+      moistureLevelElement.textContent = moistureLevel || 0;
+
+      // Promjena boje na osnovu nivoa vlažnosti tla
+      if (moistureLevel < 33) {
+        moistureLevelElement.style.color = '#e74c3c';
+      } else if (moistureLevel < 60) {
+        moistureLevelElement.style.color = '#f39c12';
+      } else {
+        moistureLevelElement.style.color = '#2ecc71';
+      }
+    });
+
+    // Praćenje režima rada iz baze
+    onValue(ref(database, 'mode'), (snapshot) => {
+      const mode = snapshot.val();
+      modeSwitch.checked = mode === 'automatic';
+      modeStatus.textContent = mode === 'automatic' ? 'Režim rada: Automatski' : 'Režim rada: Manuelni';
+    });
+
+    // Praćenje statusa pumpe iz baze
+    onValue(ref(database, 'pump'), (snapshot) => {
+      const pumpStatusValue = snapshot.val();
+      pumpSwitch.checked = pumpStatusValue === 'on';
+      pumpStatus.textContent = pumpStatusValue === 'on' ? 'Status pupme: Uključena' : 'Status pupme: Isključena';
+      pumpStatus.style.color = pumpStatusValue === 'on' ? '#2ecc71' : '#e74c3c';
+    });
+
+    // Promjena režima rada
+    modeSwitch.addEventListener('change', () => {
+      const mode = modeSwitch.checked ? 'automatic' : 'manual';
+      set(ref(database, 'mode'), mode)
+        .then(() => console.log(`Režim promijenjen u: ${mode}`))
+        .catch((error) => console.error('Greška prilikom ažuriranja režima:', error));
+    });
+
+    // Promjena statusa pumpe
+    pumpSwitch.addEventListener('change', () => {
+      const pump = pumpSwitch.checked ? 'on' : 'off';
+      set(ref(database, 'pump'), pump)
+        .then(() => console.log(`Pumpa je: ${pump}`))
+        .catch((error) => console.error('Greška prilikom ažuriranja statusa pumpe:', error));
+    });
+  </script>
+</body>
+</html>
